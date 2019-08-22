@@ -1,6 +1,5 @@
 import logging
 import time
-from functools import wraps
 
 from useful.resource.readers import ResourceURL, readers
 from useful.resource.parsers import parsers
@@ -8,7 +7,7 @@ from useful.resource.parsers import parsers
 _log = logging.getLogger(__name__)
 
 
-def _get(registry, default, **kwargs):
+def _get(registry, default=None, **kwargs):
     """
     Get default value or instance created with **kwargs. Applies to both
     readers and parsers, if creating an instance by calling obj(**kwargs) does
@@ -56,7 +55,6 @@ def cached_load(timeout=300):
     """
     memory = {}
 
-    @wraps
     def load(url, mimetype=None, parser=None, handler=None):
         """
         Load resource from uri or cache if already used before.

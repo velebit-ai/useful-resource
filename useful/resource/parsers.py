@@ -59,7 +59,7 @@ class JSON(Parser):
         Raises:
             AssertionError: If mimetype is not "application/json"
         """
-        assert reader.mimetype is "application/json"
+        assert reader.mimetype == "application/json"
         super().__init__(reader)
 
     def __call__(self):
@@ -78,7 +78,7 @@ class YAML(Parser):
         Raises:
             AssertionError: If mimetype is not "application/yaml"
         """
-        assert reader.mimetype is "application/yaml"
+        assert reader.mimetype == "application/yaml"
         super().__init__(reader)
 
     def __call__(self):
@@ -97,7 +97,7 @@ class Pickle(Parser):
         Raises:
             AssertionError: If mimetype is not "application/pickle"
         """
-        assert reader.mimetype is "application/pickle"
+        assert reader.mimetype == "application/pickle"
         super().__init__(reader)
 
     def __call__(self):

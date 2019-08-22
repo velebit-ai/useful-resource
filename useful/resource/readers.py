@@ -70,7 +70,7 @@ class LocalFile(Reader):
             AssertionError: If ResourceURL.scheme is not `file` the resource is
                 not a local file.
         """
-        assert url.scheme is "file"
+        assert url.scheme == "file"
         super().__init__(url)
 
     def open(self, *args, **kwargs):
