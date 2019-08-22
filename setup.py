@@ -2,8 +2,11 @@ from setuptools import setup
 
 exec(open("useful/resource/version.py").read())
 
-with open('requirements.txt') as f:
+with open('requirements/base.txt') as f:
     requirements = f.read().splitlines()
+
+with open('requirements/s3.txt') as f:
+    s3_requirements = f.read().splitlines()
 
 setup(
     name="useful-resource",
@@ -20,5 +23,8 @@ setup(
     author_email="dev@velebit.ai",
     packages=["useful.resource"],
     install_requires=requirements,
+    extras_require={
+        's3': s3_requirements
+    },
     include_package_data=True
 )

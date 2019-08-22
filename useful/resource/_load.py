@@ -91,7 +91,7 @@ def cached_load(timeout=300):
             if time.time() - memory[url]['time'] < timeout:
                 _log.debug(
                     f"Url '{url}' in memory for less then {timeout} seconds",
-                    extra={"url": url, "timeout": timeout})    
+                    extra={"url": url, "timeout": timeout})
                 return memory[url]['data']
             else:
                 hash_ = reader.hash()

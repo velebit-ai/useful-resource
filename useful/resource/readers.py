@@ -3,6 +3,13 @@ import logging
 import mimetypes
 from abc import ABC, abstractmethod
 
+try:
+    import botocore
+    import boto3
+    import s3fs
+    EXTRA_S3_INSTALLED = True
+except ModuleNotFoundError:
+    EXTRA_S3_INSTALLED = False
 from urllib3.util import parse_url
 
 _log = logging.getLogger(__name__)
@@ -104,5 +111,51 @@ class LocalFile(Reader):
         return sha256sum
 
 
+class S3File(Reader):
+    def __init__(self, url):
+        """
+        Read data from s3 and use etag as hash.
+
+        Args:
+            url (ResourceURL): resource URI representing mimetype, scheme and
+                location of the resource.
+
+        Raises:
+            AssertionError: If extra useful-resource[s3] is not installed
+            AssertionError: If ResourceURL.scheme is not `s3` the resource is
+                not a local file.
+        """
+        assert EXTRA_S3_INSTALLED is True
+        assert url.scheme == "s3"
+        super().__init__(url)
+        self.bucket = self.url.url.host
+        self.key = self.path.strip("/")
+        self.path = f"{self.bucket}/{self.key}"
+        self.fs = s3fs.S3FileSystem(anon=False)
+
+    def open(self, *args, **kwargs):
+        """
+        Method with arguments compatible with open() with `file=self.path`.
+        For more details check out
+
+                    https://s3fs.readthedocs.io/en/latest/api.html
+        """
+        return self.fs.open(self.path, *args, **kwargs)
+
+    def hash(self):
+        """
+        Get etag for s3 document.
+
+        Returns:
+            str: etag hash string
+        """
+        try:
+            return boto3.client('s3').head_object(Bucket=self.bucket,
+                                                  Key=self.key)['ETag'][1:-1]
+        except botocore.exceptions.ClientError:
+            _log.warning(f"Document {self.url.raw_url} not found",
+                         extra={"url": self.url.raw_url})
+
+
 # a simple list of supported resource readers
-readers = [LocalFile]
+readers = [LocalFile, S3File]
