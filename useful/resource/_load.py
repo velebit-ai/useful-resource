@@ -7,44 +7,9 @@ from useful.resource.parsers import parsers
 _log = logging.getLogger(__name__)
 
 
-def _get(registry, default=None, **kwargs):
-    """
-    Get default value or instance created with **kwargs. Applies to both
-    readers and parsers, if creating an instance by calling obj(**kwargs) does
-    not raise AssertionError, we found a Reader or Parser that supports given
-    scheme or mimetype, respectively.
-
-    Args:
-        registry (list): A list of classes.
-        default (obj, optional): A default class allowing user to override the
-            available choices from the provided registry list. Defaults to
-            None.
-
-    Returns:
-        obj: Selected instance created by providing **kwargs.
-    """
-    if default is not None:
-        _log.debug(f"Using {default.__name__}",
-                   extra={"class": default.__name__})
-        return default(**kwargs)
-    else:
-        for obj in registry:
-            try:
-                instance = obj(**kwargs)
-                _log.debug(f"Using {obj.__name__}",
-                           extra={"class": obj.__name__})
-                return instance
-            except AssertionError:
-                pass
-
-    _log.debug("Using 'None'", extra={"class": None})
-    return None
-
-
 def cached_load(timeout=300):
     """
     Define timeout to be used in `load()` function.
-
 
     Args:
         timeout (int, optional): Number of seconds to cache data without
@@ -74,16 +39,20 @@ def cached_load(timeout=300):
             ValueError: No parser supports provided mimetype
 
         Returns:
-            [type]: [description]
+            object: Final data after running reader, parser and handler on the
+                resource url
         """
         hash_ = None
 
         # get the reader from url
         resource_url = ResourceURL(url, mimetype=mimetype)
-        reader = _get(registry=readers, url=resource_url)
-        if reader is None:
+        try:
+            reader = readers[resource_url.scheme]
+        except KeyError:
             raise ValueError(
                 f"Unsupported reader scheme '{resource_url.scheme}'")
+
+        reader = reader(url=resource_url)
 
         # if url has been cached for less than `timeout` or hash sum of the
         # resource is still equal, return cached value
@@ -108,13 +77,16 @@ def cached_load(timeout=300):
         # never calculated
         hash_ = hash_ or reader.hash()
 
-        # get reader parser
-        parser = _get(registry=parsers, default=parser, reader=reader)
-        if parser is None:
-            raise ValueError("Unsupported parser")
+        # use user-provided parser or get parser from mimetype
+        try:
+            parser = parser or parsers[resource_url.mimetype]
+            parser = parser(reader=reader)
+        except KeyError:
+            raise ValueError(
+                f"Unsupported parser mimetype {resource_url.mimetype}")
 
-        # parse reader
-        data = parser()
+        # parse data provided by reader
+        data = parser.parse()
 
         # call handler on data
         if handler is not None:

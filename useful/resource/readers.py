@@ -48,12 +48,10 @@ class Reader(ABC):
         file.
 
         Args:
-            url (ResourceURL): resource URI representing mimetype, scheme and
+            url (ResourceURL): resource URL representing mimetype, scheme and
                 location of the resource.
         """
         self.url = url
-        self.mimetype = url.mimetype
-        self.path = url.path
 
     @abstractmethod
     def open(*args, **kwargs):
@@ -87,7 +85,7 @@ class LocalFile(Reader):
 
                 https://docs.python.org/3/library/functions.html#open
         """
-        return open(self.path, *args, **kwargs)
+        return open(self.url.path, *args, **kwargs)
 
     def hash(self):
         """
@@ -96,18 +94,18 @@ class LocalFile(Reader):
         Returns:
             str: sha256sum for file located on `self.path`
         """
-        _log.debug(f"Started calculating sha256sum for '{self.path}'",
-                   extra={"path": self.path})
+        _log.debug(f"Started calculating sha256sum for '{self.url.path}'",
+                   extra={"path": self.url.path})
         h = hashlib.sha256()
         b = bytearray(128 * 1024)
         mv = memoryview(b)
-        with open(self.path, 'rb', buffering=0) as f:
+        with open(self.url.path, 'rb', buffering=0) as f:
             for n in iter(lambda: f.readinto(mv), 0):
                 h.update(mv[:n])
 
         sha256sum = h.hexdigest()
-        _log.debug(f"Finished calculating sha256sum for '{self.path}'",
-                   extra={"path": self.path, "sha256sum": sha256sum})
+        _log.debug(f"Finished calculating sha256sum for '{self.url.path}'",
+                   extra={"path": self.url.path, "sha256sum": sha256sum})
         return sha256sum
 
 
@@ -119,7 +117,6 @@ class S3File(Reader):
         Args:
             url (ResourceURL): resource URI representing mimetype, scheme and
                 location of the resource.
-
         Raises:
             AssertionError: If extra useful-resource[s3] is not installed
             AssertionError: If ResourceURL.scheme is not `s3` the resource is
@@ -129,8 +126,7 @@ class S3File(Reader):
         assert url.scheme == "s3"
         super().__init__(url)
         self.bucket = self.url.url.host
-        self.key = self.path.strip("/")
-        self.path = f"{self.bucket}/{self.key}"
+        self.key = self.url.path.strip("/")
         self.fs = s3fs.S3FileSystem(anon=False)
 
     def open(self, *args, **kwargs):
@@ -140,7 +136,7 @@ class S3File(Reader):
 
                     https://s3fs.readthedocs.io/en/latest/api.html
         """
-        return self.fs.open(self.path, *args, **kwargs)
+        return self.fs.open(f"{self.bucket}/{self.key}", *args, **kwargs)
 
     def hash(self):
         """
@@ -157,5 +153,8 @@ class S3File(Reader):
                          extra={"url": self.url.raw_url})
 
 
-# a simple list of supported resource readers
-readers = [LocalFile, S3File]
+# a simple dict of supported resource readers
+readers = {
+    "file": LocalFile,
+    "s3": S3File
+}
