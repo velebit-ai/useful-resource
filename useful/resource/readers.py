@@ -10,15 +10,14 @@ try:
     EXTRA_S3_INSTALLED = True
 except ModuleNotFoundError:
     EXTRA_S3_INSTALLED = False
-from urllib3.util import parse_url
 
 _log = logging.getLogger(__name__)
 
 
 class ResourceURL:
     """
-    An object that parses url using urllib3.util.parse_url and defines a
-    resource by its location, schema and mimetype.
+    An object that parses url and defines a resource by its location, schema
+    and mimetype.
 
     Args:
         url (str): String represeting URL specified in RFC 1738.
@@ -29,12 +28,12 @@ class ResourceURL:
             Defaults to None.
     """
     def __init__(self, url, mimetype=None):
-        self.raw_url = url
-        self.url = parse_url(url)
-        self.path = self.url.path
-
-        # if url.scheme is None: set scheme to "file"
-        self.scheme = self.url.scheme or "file"
+        self.url = url
+        split = url.split("://", 1)
+        if len(split) == 1:
+            self.scheme, self.path = "file", split[0]
+        else:
+            self.scheme, self.path = split
 
         # specify mimetype from argument or read from url extension
         self.mimetype = mimetype or mimetypes.guess_type(url)[0]
@@ -125,8 +124,7 @@ class S3File(Reader):
         assert EXTRA_S3_INSTALLED is True
         assert url.scheme == "s3"
         super().__init__(url)
-        self.bucket = self.url.url.host
-        self.key = self.url.path.strip("/")
+        self.bucket, self.key = self.url.path.split("/", 1)
         self.fs = s3fs.S3FileSystem(anon=False)
 
     def open(self, *args, **kwargs):
@@ -149,8 +147,8 @@ class S3File(Reader):
             return boto3.client('s3').head_object(Bucket=self.bucket,
                                                   Key=self.key)['ETag'][1:-1]
         except botocore.exceptions.ClientError:
-            _log.warning(f"Document {self.url.raw_url} not found",
-                         extra={"url": self.url.raw_url})
+            _log.warning(f"Document {self.url.url} not found",
+                         extra={"url": self.url.url})
 
 
 # a simple dict of supported resource readers
