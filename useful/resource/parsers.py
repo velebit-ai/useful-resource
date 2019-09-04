@@ -4,7 +4,7 @@ import mimetypes
 import pickle
 import time
 
-import yaml
+import ruamel.yaml
 
 _log = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ class JSON(Parser):
 class YAML(Parser):
     def __init__(self, reader):
         """
-        A class for parsing YAML resources.
+        A class for parsing YAML resources using.
 
         Args:
             reader (useful.resource.Reader): A Reader instance
@@ -77,9 +77,10 @@ class YAML(Parser):
         """
         assert reader.url.mimetype == "application/yaml"
         super().__init__(reader)
+        self.yaml = ruamel.yaml.YAML()
 
     def parse(self):
-        return super().parse(yaml.safe_load)
+        return super().parse(self.yaml.load)
 
 
 class Pickle(Parser):
