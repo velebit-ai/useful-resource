@@ -20,7 +20,7 @@ def cached_load(timeout=300):
     """
     memory = {}
 
-    def load(url, mimetype=None, parser=None, handler=None):
+    def load(url, mimetype=None, parser=None, hook=None):
         """
         Load resource from uri or cache if already used before.
 
@@ -31,7 +31,7 @@ def cached_load(timeout=300):
             parser (useful.resource.parsers.Parser, optional): A parser class
                 to use instead of parsers from useful.resource.parsers.parsers.
                 Defaults to None.
-            handler (callable, optional): An optional function to call after
+            hook (callable, optional): An optional function to call after
                 reading and parsing the data. Defaults to None.
 
         Raises:
@@ -39,7 +39,7 @@ def cached_load(timeout=300):
             ValueError: No parser supports provided mimetype
 
         Returns:
-            object: Final data after running reader, parser and handler on the
+            object: Final data after running reader, parser and hook on the
                 resource url
         """
         hash_ = None
@@ -70,9 +70,9 @@ def cached_load(timeout=300):
                         extra={"url": url, "hash": hash_})
                     return memory[url]['data']
 
-        # if url has been cached but needs to update use caches handler as a
-        # handler, otherwise use function parameter handler as handler object
-        handler = memory.get(url, {}).get("handler", handler)
+        # if url has been cached but needs to update use cached hook as a
+        # hook, otherwise use function parameter hook as hook object
+        hook = memory.get(url, {}).get("hook", hook)
         # use already calculated above hash sum or calculate hash sum if it was
         # never calculated
         hash_ = hash_ or reader.hash()
@@ -88,16 +88,16 @@ def cached_load(timeout=300):
         # parse data provided by reader
         data = parser.parse()
 
-        # call handler on data
-        if handler is not None:
-            data = handler(data)
+        # call hook on data
+        if hook is not None:
+            data = hook(data)
 
         # cache results and other relevant data
         memory[url] = {
             'time': time.time(),
             'hash': hash_,
             'data': data,
-            'handler': handler
+            'hook': hook
         }
         _log.debug(f"Upserting url '{url}' in memory",
                    extra={"url": url, "hash": hash_})
