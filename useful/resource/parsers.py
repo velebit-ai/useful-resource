@@ -1,10 +1,11 @@
 import json
 import logging
-import mimetypes
 import pickle
 import time
 
 import ruamel.yaml
+
+from useful.resource import mimetypes
 
 _log = logging.getLogger(__name__)
 

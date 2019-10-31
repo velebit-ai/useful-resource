@@ -1,6 +1,5 @@
 import hashlib
 import logging
-import mimetypes
 from abc import ABC, abstractmethod
 
 try:
@@ -10,6 +9,8 @@ try:
     EXTRA_S3_INSTALLED = True
 except ModuleNotFoundError:
     EXTRA_S3_INSTALLED = False
+
+from useful.resource import mimetypes
 
 _log = logging.getLogger(__name__)
 
@@ -23,9 +24,9 @@ class ResourceURL:
         url (str): String represeting URL specified in RFC 1738.
         mimetype (str, optional): MIME type conforming definions in RFC 2045,
             RFC 2046, RFC 2047, RFC 4288, RFC 4289 and RFC 2049. Allow
-            additional non-standard "text/yaml" mimetype for ".yaml" and ".yml"
-            extensions. Override extracted mimetype from url if specified.
-            Defaults to None.
+            additional non-standard "application/yaml" mimetype for ".yaml" and
+            ".yml" extensions. Override extracted mimetype from url if
+            specified. Defaults to None.
     """
     def __init__(self, url, mimetype=None):
         self.url = url
