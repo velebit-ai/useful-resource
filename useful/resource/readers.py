@@ -10,6 +10,12 @@ try:
 except ModuleNotFoundError:
     EXTRA_S3_INSTALLED = False
 
+try:
+    import gcsfs
+    EXTRA_GS_INSTALLED = True
+except ModuleNotFoundError:
+    EXTRA_GS_INSTALLED = False
+
 from useful.resource import mimetypes
 
 _log = logging.getLogger(__name__)
@@ -120,7 +126,7 @@ class S3File(Reader):
         Raises:
             AssertionError: If extra useful-resource[s3] is not installed
             AssertionError: If ResourceURL.scheme is not `s3` the resource is
-                not a local file.
+                not an s3 resource.
         """
         assert EXTRA_S3_INSTALLED is True
         assert url.scheme == "s3"
@@ -130,8 +136,8 @@ class S3File(Reader):
 
     def open(self, *args, **kwargs):
         """
-        Method with arguments compatible with open() with `file=self.path`.
-        For more details check out
+        Method with arguments compatible with open() with `file=path`. For more
+        details check out
 
                     https://s3fs.readthedocs.io/en/latest/api.html
         """
@@ -152,8 +158,53 @@ class S3File(Reader):
                          extra={"url": self.url.url})
 
 
+class GSFile(Reader):
+    def __init__(self, url):
+        """
+        Read data from Google Storage and use crc32c sum as hash.
+
+        Args:
+            url (ResourceURL): resource URI representing mimetype, scheme and
+                location of the resource.
+        Raises:
+            AssertionError: If extra useful-resource[gs] is not installed
+            AssertionError: If ResourceURL.scheme is not `gs` the resource is
+                not an Google Storage resource.
+        """
+        assert EXTRA_GS_INSTALLED is True
+        assert url.scheme == "gs"
+        super().__init__(url)
+        self.fs = gcsfs.GCSFileSystem()
+
+    def open(self, *args, **kwargs):
+        """
+        Method with arguments compatible with open() with `file=path`. For more
+        details check out
+
+                https://gcsfs.readthedocs.io/en/latest/api.html
+        """
+        return self.fs.open(self.url.path, *args, **kwargs)
+
+    def hash(self):
+        """
+        Get crc32c sum for a google storage document.
+
+        Returns:
+            str: crc32c checksum
+        """
+        try:
+            return self.fs.info(self.url.path)["crc32c"]
+        except FileNotFoundError:
+            _log.warning(f"Document {self.url.url} not found",
+                         extra={"url": self.url.url})
+        except KeyError:
+            _log.warning(f"Checksum 'crc32c' for {self.url.url} not found",
+                         extra={"url": self.url.url})
+
+
 # a simple dict of supported resource readers
 readers = {
     "file": LocalFile,
-    "s3": S3File
+    "s3": S3File,
+    "gs": GSFile
 }
