@@ -1,2 +1,3 @@
--r requirements/base.txt
--r requirements/s3.txt
+-r base.txt
+-r s3.txt
+-r gs.txt
