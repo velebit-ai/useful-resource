@@ -15,16 +15,16 @@ with open('requirements/gs.txt') as f:
 setup(
     name="useful-resource",
     version=__version__,  # noqa
-    description="Useful packages",
+    description="Module used to simplify and unify resource access from various locations",
     classifiers=[
-        "Licence :: Other/Proprietary Licence",
-
+        "License :: OSI Approved :: MIT License",
+        
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6"
     ],
-    url="https://gitlab.com/velebit/useful/resource",
-    author="Velebit",
-    author_email="dev@velebit.ai",
+    url="https://github.com/velebit-ai/useful-resource",
+    author="Velebit AI",
+    author_email="contact@velebit.ai",
     packages=["useful.resource"],
     install_requires=requirements,
     extras_require={
