@@ -57,7 +57,8 @@ def cached_load(timeout=300):
         # if url has been cached for less than `timeout` or hash sum of the
         # resource is still equal, return cached value
         if url in memory:
-            if time.time() - memory[url]['time'] < timeout:
+            now = time.time()
+            if now - memory[url]['time'] < timeout:
                 _log.debug(
                     f"Url '{url}' in memory for less then {timeout} seconds",
                     extra={"url": url, "timeout": timeout})
@@ -68,6 +69,8 @@ def cached_load(timeout=300):
                     _log.debug(
                         f"Url '{url}' in memory hasn't changed hash sum",
                         extra={"url": url, "hash": hash_})
+                    # update object timestamp in memory
+                    memory[url]['time'] = now
                     return memory[url]['data']
 
         # if url has been cached but needs to update use cached hook as a
